@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tocco acqua</title>
+  <style>
+    :root {
+      --ink: #07080c;
+      --paper: #10141c;
+      --line: rgba(212, 175, 106, 0.45);
+      --gold: #e4c27a;
+      --mist: #c5d4e0;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: radial-gradient(900px 500px at 50% 18%, rgba(64, 110, 140, 0.18), transparent 60%), var(--ink); color: var(--mist); font-family: system-ui, sans-serif; }
+    body { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px 40px; gap: 28px; }
+    header { text-align: center; max-width: 28rem; }
+    h1 { margin: 0 0 8px; font-weight: 500; font-size: 1.35rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+    p { margin: 0; line-height: 1.45; color: #9aabba; font-size: 0.95rem; }
+    .stage { position: relative; width: min(100%, 420px); height: 280px; border-radius: 28px; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 30%), var(--paper); box-shadow: inset 0 0 0 1px var(--line), 0 20px 60px rgba(0,0,0,0.35); overflow: hidden; touch-action: manipulation; }
+    .pool { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 120%, rgba(48, 92, 120, 0.35), transparent 55%); pointer-events: none; }
+    button.acqua { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 220px; min-height: 64px; padding: 0 28px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #f0d7a2, #c49a55); color: #1a140c; font: 600 1.05rem/1 system-ui, sans-serif; letter-spacing: 0.04em; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    button.acqua:active { transform: translate(-50%, -50%) scale(0.98); }
+    .ripple { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 1.5px solid rgba(190, 220, 235, 0.7); pointer-events: none; animation: onda 700ms ease-out forwards; }
+    .ripple.eco { animation-delay: 90ms; border-color: rgba(160, 200, 220, 0.35); }
+    @keyframes onda { from { transform: scale(0.4); opacity: 0.85; } to { transform: scale(18); opacity: 0; } }
+    .nota { font-size: 0.8rem; color: #6e7e8c; text-align: center; max-width: 26rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tocco acqua</h1>
+    <p>Premi il tasto con il dito. Onda, goccia e vibrazione partono insieme.</p>
+  </header>
+  <div class="stage" id="stage">
+    <div class="pool"></div>
+    <button class="acqua" id="tasto" type="button">Segna fatto</button>
+  </div>
+  <p class="nota">iPhone in Safari non vibra. Android in Chrome fa un’onda corta. Il suono parte dopo il primo tocco.</p>
+  <script>
+    const stage = document.getElementById("stage");
+    const tasto = document.getElementById("tasto");
+    let audio;
+    function contesto() {
+      if (!audio) audio = new AudioContext();
+      if (audio.state === "suspended") audio.resume();
+      return audio;
+    }
+    function goccia() {
+      const ctx = contesto();
+      const t = ctx.currentTime;
+      const durata = 0.16;
+      const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * durata), ctx.sampleRate);
+      const dati = buffer.getChannelData(0);
+      for (let i = 0; i < dati.length; i++) dati[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.03));
+      const sorgente = ctx.createBufferSource();
+      sorgente.buffer = buffer;
+      const filtro = ctx.createBiquadFilter();
+      filtro.type = "bandpass";
+      filtro.frequency.setValueAtTime(1400, t);
+      filtro.frequency.exponentialRampToValueAtTime(280, t + durata);
+      filtro.Q.value = 0.7;
+      const tono = ctx.createOscillator();
+      tono.type = "sine";
+      tono.frequency.setValueAtTime(620, t);
+      tono.frequency.exponentialRampToValueAtTime(180, t + 0.12);
+      const guadagno = ctx.createGain();
+      guadagno.gain.setValueAtTime(0.0001, t);
+      guadagno.gain.exponentialRampToValueAtTime(0.22, t + 0.012);
+      guadagno.gain.exponentialRampToValueAtTime(0.0001, t + durata);
+      const tonoGain = ctx.createGain();
+      tonoGain.gain.setValueAtTime(0.0001, t);
+      tonoGain.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
+      tonoGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      sorgente.connect(filtro); filtro.connect(guadagno); guadagno.connect(ctx.destination);
+      tono.connect(tonoGain); tonoGain.connect(ctx.destination);
+      sorgente.start(t); sorgente.stop(t + durata); tono.start(t); tono.stop(t + 0.14);
+    }
+    function onda(x, y) {
+      const rect = stage.getBoundingClientRect();
+      [0, 1].forEach((eco) => {
+        const nodo = document.createElement("span");
+        nodo.className = eco ? "ripple eco" : "ripple";
+        nodo.style.left = (x - rect.left) + "px";
+        nodo.style.top = (y - rect.top) + "px";
+        stage.appendChild(nodo);
+        nodo.addEventListener("animationend", () => nodo.remove());
+      });
+    }
+    tasto.addEventListener("pointerdown", (evento) => {
+      if (evento.pointerType === "mouse" && evento.button !== 0) return;
+      onda(evento.clientX, evento.clientY);
+      goccia();
+      if (navigator.vibrate) navigator.vibrate([12, 38, 8]);
+    });
+  </script>
+</body>
+</html>
