@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Carattere vivo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: #07080c; color: #f7f4ee; font-family: Outfit, sans-serif; }
+    button { border: 0; background: transparent; color: inherit; text-align: left; padding: 24px; }
+    h1 { margin: 0; font-weight: 300; letter-spacing: 0.16em; font-size: clamp(2.4rem, 8vw, 4rem); transition: font-weight 280ms ease, letter-spacing 280ms ease; }
+    button.su h1 { font-weight: 600; letter-spacing: -0.03em; }
+    .via { margin: 14px 0; color: #9aa8b8; font-weight: 300; letter-spacing: 0; }
+    .ora { margin: 0; font-size: 2.6rem; font-weight: 300; color: #6e6a62; transition: color 280ms ease, font-weight 280ms ease; }
+    button.su .ora { color: #e4c27a; font-weight: 600; }
+    .nota { margin-top: 28px; color: #6e7e8c; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <button id="t" type="button">
+    <h1>Relais Aurora</h1>
+    <p class="via">Via Mazzini 12</p>
+    <p class="ora" id="ora">10:00</p>
+    <p class="nota">Tieni premuto il nome.</p>
+  </button>
+  <script>
+    const t = document.getElementById("t");
+    const ora = document.getElementById("ora");
+    t.addEventListener("pointerdown", () => { t.classList.add("su"); ora.textContent = "15:00"; });
+    const su = () => { t.classList.remove("su"); ora.textContent = "10:00"; };
+    t.addEventListener("pointerup", su);
+    t.addEventListener("pointerleave", su);
+  </script>
+</body>
+</html>
